@@ -35,8 +35,9 @@ export function buildTikTokAuthUrl(state?: string): string {
   // Generate state if not provided
   const stateParam = state || crypto.randomUUID();
 
-  // Build scope string (space-separated)
-  const scope = TIKTOK_SCOPES.join(" ");
+  // Build scope string (comma-separated for TikTok API)
+  // TikTok Login Kit requires comma-separated scopes
+  const scope = TIKTOK_SCOPES.join(",");
 
   // Build URL with query parameters
   const params = new URLSearchParams({
