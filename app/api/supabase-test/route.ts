@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/supabaseClient';
 
+// Force dynamic rendering - this route should never be statically generated
+export const dynamic = 'force-dynamic';
+
 /**
  * Test route to verify Supabase connection
  * 
