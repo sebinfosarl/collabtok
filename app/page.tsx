@@ -1,11 +1,11 @@
 export default function Home() {
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
-      <div className="text-center">
-        <h2 className="text-4xl font-semibold text-gray-800 mb-2">
-          CollabTOK Dashboard – coming soon
-        </h2>
-      </div>
+    <div style={{ padding: '2rem', textAlign: 'center' }}>
+      <h1>CollabTOK Dashboard</h1>
+      <p>Coming soon</p>
+      <a href="/api/supabase-test" style={{ display: 'inline-block', marginTop: '1rem', padding: '0.5rem 1rem', backgroundColor: '#3b82f6', color: 'white', textDecoration: 'none', borderRadius: '0.25rem' }}>
+        Test Supabase Connection
+      </a>
     </div>
   );
 }
