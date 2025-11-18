@@ -27,12 +27,12 @@ function getSupabaseAnonKey(): string {
 /**
  * Creates a Supabase client instance with validated environment variables.
  * Can be used in both server components and API routes.
+ * 
+ * Note: This function should be called at runtime, not at module load time,
+ * to ensure environment variables are available.
  */
 export function createSupabaseClient() {
   const supabaseUrl = getSupabaseUrl();
   const supabaseAnonKey = getSupabaseAnonKey();
   return createClient(supabaseUrl, supabaseAnonKey);
 }
-
-// Export a default client instance for convenience
-export const supabase = createSupabaseClient();
