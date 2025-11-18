@@ -17,6 +17,29 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET() {
   try {
+    // Validate environment variables at runtime
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      return NextResponse.json(
+        { 
+          ok: false, 
+          error: 'Missing NEXT_PUBLIC_SUPABASE_URL environment variable',
+          details: 'Please configure NEXT_PUBLIC_SUPABASE_URL in your Vercel project settings'
+        },
+        { status: 500 }
+      );
+    }
+    
+    if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      return NextResponse.json(
+        { 
+          ok: false, 
+          error: 'Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable',
+          details: 'Please configure NEXT_PUBLIC_SUPABASE_ANON_KEY in your Vercel project settings'
+        },
+        { status: 500 }
+      );
+    }
+    
     const supabase = createSupabaseClient();
     
     // Test query: count users
