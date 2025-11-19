@@ -162,8 +162,17 @@ export async function GET(req: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("TikTok callback error", error);
+    // Enhanced error logging for debugging
+    console.error("TikTok callback error:", error);
+    
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    } else {
+      console.error("Unknown error type:", typeof error, error);
+    }
 
+    // Include error details in query param for debugging (in production, you might want to remove this)
     const errorMessage =
       error instanceof Error
         ? error.message
@@ -171,7 +180,7 @@ export async function GET(req: NextRequest) {
 
     // Redirect to home with error
     return NextResponse.redirect(
-      new URL(`/?error=tiktok_callback_failed`, req.url)
+      new URL(`/?error=tiktok_callback_failed&details=${encodeURIComponent(errorMessage)}`, req.url)
     );
   }
 }

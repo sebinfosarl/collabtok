@@ -6,7 +6,11 @@ import Image from "next/image";
 // Force dynamic rendering since we're using cookies and server-side data fetching
 export const dynamic = 'force-dynamic';
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: { error?: string; details?: string };
+}) {
   let session;
   try {
     session = await getUserSessionOnServer();
@@ -18,10 +22,21 @@ export default async function Home() {
 
   // If no session, show connect screen
   if (!session?.userId) {
+    const error = searchParams?.error;
+    const errorDetails = searchParams?.details;
+
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center p-8 bg-white rounded-lg shadow-md max-w-md w-full mx-4">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Connect your TikTok</h1>
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 font-semibold mb-2">Error: {error}</p>
+              {errorDetails && (
+                <p className="text-red-600 text-sm">{decodeURIComponent(errorDetails)}</p>
+              )}
+            </div>
+          )}
           <p className="text-gray-600 mb-6">
             Sign in with TikTok to view your profile and statistics
           </p>

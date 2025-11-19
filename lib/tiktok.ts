@@ -134,15 +134,27 @@ export async function exchangeCodeForToken(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("TikTok token exchange error:", errorText);
-    throw new Error(`Failed to exchange code for token: ${response.status} ${response.statusText}`);
+    console.error("TikTok token exchange error:", {
+      status: response.status,
+      statusText: response.statusText,
+      errorText,
+      redirectUri,
+    });
+    throw new Error(`Failed to exchange code for token: ${response.status} ${response.statusText}. ${errorText}`);
   }
 
   const data = await response.json();
   
   // Check for TikTok API error response
   if (data.error) {
-    throw new Error(`TikTok API error: ${data.error_description || data.error}`);
+    console.error("TikTok API error response:", data);
+    throw new Error(`TikTok API error: ${data.error_description || data.error} (code: ${data.error_code || 'unknown'})`);
+  }
+
+  // Validate required fields
+  if (!data.access_token || !data.open_id) {
+    console.error("TikTok token response missing required fields:", data);
+    throw new Error("TikTok token response missing access_token or open_id");
   }
 
   return data as TikTokTokenResponse;
@@ -158,31 +170,57 @@ export async function exchangeCodeForToken(
 export async function fetchTikTokUserInfo(
   accessToken: string
 ): Promise<TikTokUserInfo> {
-  const response = await fetch(
-    `${TIKTOK_USER_INFO_ENDPOINT}?fields=open_id,avatar_url,display_name,bio_description,profile_deep_link,is_verified,username,follower_count,following_count,likes_count,video_count`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
-  );
+  // TikTok API v2 uses POST with fields in request body, not query params
+  const fields = [
+    "open_id",
+    "avatar_url",
+    "display_name",
+    "bio_description",
+    "profile_deep_link",
+    "is_verified",
+    "username",
+    "follower_count",
+    "following_count",
+    "likes_count",
+    "video_count",
+  ];
+
+  const response = await fetch(TIKTOK_USER_INFO_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      fields: fields,
+    }),
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("TikTok user info error:", errorText);
-    throw new Error(`Failed to fetch user info: ${response.status} ${response.statusText}`);
+    console.error("TikTok user info error:", {
+      status: response.status,
+      statusText: response.statusText,
+      errorText,
+    });
+    throw new Error(`Failed to fetch user info: ${response.status} ${response.statusText}. ${errorText}`);
   }
 
   const data = await response.json();
   
   // Check for TikTok API error response
   if (data.error) {
-    throw new Error(`TikTok API error: ${data.error_description || data.error}`);
+    console.error("TikTok API error response:", data);
+    throw new Error(`TikTok API error: ${data.error_description || data.error} (code: ${data.error_code || 'unknown'})`);
   }
 
-  // TikTok API returns data in a nested structure
-  const userData = data.data?.user || data;
+  // TikTok API v2 returns data in a nested structure: { data: { user: {...} } }
+  const userData = data.data?.user || data.data || data;
+  
+  if (!userData || !userData.open_id) {
+    console.error("TikTok user info response missing user data:", data);
+    throw new Error("TikTok user info response missing user data or open_id");
+  }
   
   return {
     open_id: userData.open_id,
