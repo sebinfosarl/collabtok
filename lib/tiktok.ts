@@ -70,19 +70,19 @@ export interface TikTokTokenResponse {
 /**
  * TikTok user info response type
  */
-export interface TikTokUserInfo {
+export type TikTokUserInfo = {
   open_id: string;
-  avatar_url?: string;
-  display_name?: string;
-  bio_description?: string;
-  profile_deep_link?: string;
-  is_verified?: boolean;
-  username?: string;
-  follower_count?: number;
-  following_count?: number;
-  likes_count?: number;
-  video_count?: number;
-}
+  avatar_url: string | null;
+  display_name: string | null;
+  bio_description: string | null;
+  profile_deep_link: string | null;
+  is_verified: boolean | null;
+  username: string | null;
+  follower_count: number | null;
+  following_count: number | null;
+  likes_count: number | null;
+  video_count: number | null;
+};
 
 /**
  * Exchanges an authorization code for an access token
@@ -134,19 +134,20 @@ export async function exchangeCodeForToken(
   });
 
   if (!response.ok) {
-    let errorText = "";
+    let errorData: any = null;
     try {
-      errorText = await response.text();
+      const errorText = await response.text();
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { message: errorText };
+      }
     } catch (e) {
-      errorText = "Could not read error response";
+      errorData = { message: "Could not read error response" };
     }
-    console.error("TikTok token exchange error:", {
-      status: response.status,
-      statusText: response.statusText,
-      errorText,
-      redirectUri,
-    });
-    throw new Error(`Failed to exchange code for token: ${response.status} ${response.statusText}. ${errorText}`);
+    
+    const relevantPart = errorData.error || errorData.error_description || errorData.message || errorData;
+    throw new Error("TikTok token error: " + JSON.stringify(relevantPart));
   }
 
   let data;
@@ -154,8 +155,7 @@ export async function exchangeCodeForToken(
     data = await response.json();
   } catch (e) {
     const text = await response.text();
-    console.error("Failed to parse TikTok token response as JSON:", text);
-    throw new Error(`Invalid JSON response from TikTok API: ${text.substring(0, 200)}`);
+    throw new Error("TikTok token error: " + JSON.stringify({ message: "Invalid JSON response", text: text.substring(0, 200) }));
   }
   
   // Check for TikTok API error response
@@ -169,21 +169,8 @@ export async function exchangeCodeForToken(
       console.log("TikTok API success response with error.code='ok'");
     } else {
       // This is a real error
-      console.error("TikTok API error response:", JSON.stringify(data, null, 2));
-      
-      let errorMessage = "Unknown error";
-      
-      if (typeof data.error === "string") {
-        errorMessage = data.error;
-      } else if (data.error?.message) {
-        errorMessage = data.error.message;
-      } else if (data.error_description) {
-        errorMessage = data.error_description;
-      } else {
-        errorMessage = JSON.stringify(data.error);
-      }
-      
-      throw new Error(`TikTok API error: ${errorMessage} (code: ${errorCode || 'unknown'})`);
+      const relevantPart = data.error || { code: errorCode, message: data.error_description || "Unknown error" };
+      throw new Error("TikTok token error: " + JSON.stringify(relevantPart));
     }
   }
 
@@ -231,19 +218,20 @@ export async function fetchTikTokUserInfo(
   });
 
   if (!response.ok) {
-    let errorText = "";
+    let errorData: any = null;
     try {
-      errorText = await response.text();
+      const errorText = await response.text();
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { message: errorText };
+      }
     } catch (e) {
-      errorText = "Could not read error response";
+      errorData = { message: "Could not read error response" };
     }
-    console.error("TikTok user info error:", {
-      status: response.status,
-      statusText: response.statusText,
-      errorText,
-      url,
-    });
-    throw new Error(`Failed to fetch user info: ${response.status} ${response.statusText}. ${errorText}`);
+    
+    const relevantPart = errorData.error || errorData.error_description || errorData.message || errorData;
+    throw new Error("TikTok user info error: " + JSON.stringify(relevantPart));
   }
 
   let data;
@@ -251,8 +239,7 @@ export async function fetchTikTokUserInfo(
     data = await response.json();
   } catch (e) {
     const text = await response.text();
-    console.error("Failed to parse TikTok user info response as JSON:", text);
-    throw new Error(`Invalid JSON response from TikTok API: ${text.substring(0, 200)}`);
+    throw new Error("TikTok user info error: " + JSON.stringify({ message: "Invalid JSON response", text: text.substring(0, 200) }));
   }
   
   // Check for TikTok API error response
@@ -266,21 +253,8 @@ export async function fetchTikTokUserInfo(
       console.log("TikTok API success response with error.code='ok'");
     } else {
       // This is a real error
-      console.error("TikTok API error response:", JSON.stringify(data, null, 2));
-      
-      let errorMessage = "Unknown error";
-      
-      if (typeof data.error === "string") {
-        errorMessage = data.error;
-      } else if (data.error?.message) {
-        errorMessage = data.error.message;
-      } else if (data.error_description) {
-        errorMessage = data.error_description;
-      } else {
-        errorMessage = JSON.stringify(data.error);
-      }
-      
-      throw new Error(`TikTok API error: ${errorMessage} (code: ${errorCode || 'unknown'})`);
+      const relevantPart = data.error || { code: errorCode, message: data.error_description || "Unknown error" };
+      throw new Error("TikTok user info error: " + JSON.stringify(relevantPart));
     }
   }
 
@@ -292,27 +266,18 @@ export async function fetchTikTokUserInfo(
     throw new Error("TikTok user info response missing user data or open_id");
   }
   
-  // Log the response to debug video_count issue
-  console.log("TikTok user info response:", {
-    open_id: userData.open_id,
-    username: userData.username,
-    video_count: userData.video_count,
-    follower_count: userData.follower_count,
-    all_fields: Object.keys(userData),
-  });
-  
   return {
     open_id: userData.open_id,
-    avatar_url: userData.avatar_url,
-    display_name: userData.display_name,
-    bio_description: userData.bio_description,
-    profile_deep_link: userData.profile_deep_link,
-    is_verified: userData.is_verified,
-    username: userData.username,
-    follower_count: userData.follower_count,
-    following_count: userData.following_count,
-    likes_count: userData.likes_count,
-    video_count: userData.video_count,
+    avatar_url: userData.avatar_url ?? null,
+    display_name: userData.display_name ?? null,
+    bio_description: userData.bio_description ?? null,
+    profile_deep_link: userData.profile_deep_link ?? null,
+    is_verified: userData.is_verified ?? null,
+    username: userData.username ?? null,
+    follower_count: userData.follower_count ?? null,
+    following_count: userData.following_count ?? null,
+    likes_count: userData.likes_count ?? null,
+    video_count: userData.video_count ?? null,
   };
 }
 

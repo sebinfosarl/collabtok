@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
     if (userError && userError.code !== "PGRST116") {
       // PGRST116 is "not found" which is fine, other errors are real problems
       console.error("Error checking for existing user:", userError);
-      return NextResponse.redirect(new URL("/?error=supabase_error", req.url));
+      throw new Error(`Failed to check for existing user: ${userError.message}`);
     }
 
     if (existingUser) {
@@ -89,12 +89,12 @@ export async function GET(req: NextRequest) {
 
       if (insertError) {
         console.error("Error creating user:", insertError);
-        return NextResponse.redirect(new URL("/?error=supabase_error", req.url));
+        throw new Error(`Failed to create user: ${insertError.message}`);
       }
 
       if (!newUser) {
         console.error("Failed to create user - no data returned");
-        return NextResponse.redirect(new URL("/?error=supabase_error", req.url));
+        throw new Error("Failed to create user - no data returned");
       }
 
       userId = newUser.id;
@@ -110,10 +110,7 @@ export async function GET(req: NextRequest) {
           tiktok_display_name: userInfo.display_name || null,
           profile_picture_url: userInfo.avatar_url || null,
           bio: userInfo.bio_description || null,
-          verified: userInfo.is_verified || false,
-          follower_count: userInfo.follower_count || 0,
-          following_count: userInfo.following_count || 0,
-          video_count: userInfo.video_count || 0,
+          verified: userInfo.is_verified ?? false,
           updated_at: new Date().toISOString(),
         },
         {
@@ -123,7 +120,7 @@ export async function GET(req: NextRequest) {
 
     if (profileError) {
       console.error("Error upserting TikTok profile:", profileError);
-      return NextResponse.redirect(new URL("/?error=supabase_error", req.url));
+      throw new Error(`Failed to save TikTok profile: ${profileError.message}`);
     }
 
     // Insert new stats snapshot
@@ -131,16 +128,16 @@ export async function GET(req: NextRequest) {
       .from("tiktok_stats")
       .insert({
         user_id: userId,
-        follower_count: userInfo.follower_count || 0,
-        following_count: userInfo.following_count || 0,
-        video_count: userInfo.video_count || 0,
-        total_likes: userInfo.likes_count || 0,
+        follower_count: userInfo.follower_count ?? 0,
+        following_count: userInfo.following_count ?? 0,
+        video_count: userInfo.video_count ?? 0,
+        total_likes: userInfo.likes_count ?? 0,
         recorded_at: new Date().toISOString(),
       });
 
     if (statsError) {
       console.error("Error inserting TikTok stats:", statsError);
-      return NextResponse.redirect(new URL("/?error=supabase_error", req.url));
+      throw new Error(`Failed to save TikTok stats: ${statsError.message}`);
     }
 
     // Store access token for automatic syncing
@@ -190,24 +187,17 @@ export async function GET(req: NextRequest) {
     return response;
   } catch (error) {
     // Enhanced error logging for debugging
-    console.error("TikTok callback error:", error);
+    console.error("TikTok callback error", error);
     
-    if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
-    } else {
-      console.error("Unknown error type:", typeof error, error);
-    }
-
-    // Include error details in query param for debugging (in production, you might want to remove this)
+    // Extract a readable error message
     const errorMessage =
       error instanceof Error
         ? error.message
-        : "Failed to process TikTok callback";
+        : JSON.stringify(error);
 
     // Redirect to home with error
     return NextResponse.redirect(
-      new URL(`/?error=tiktok_callback_failed&details=${encodeURIComponent(errorMessage)}`, req.url)
+      new URL(`/?error=tiktok_callback_failed&errorMessage=${encodeURIComponent(errorMessage)}`, req.url)
     );
   }
 }
