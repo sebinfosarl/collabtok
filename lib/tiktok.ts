@@ -134,7 +134,12 @@ export async function exchangeCodeForToken(
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    let errorText = "";
+    try {
+      errorText = await response.text();
+    } catch (e) {
+      errorText = "Could not read error response";
+    }
     console.error("TikTok token exchange error:", {
       status: response.status,
       statusText: response.statusText,
@@ -144,12 +149,40 @@ export async function exchangeCodeForToken(
     throw new Error(`Failed to exchange code for token: ${response.status} ${response.statusText}. ${errorText}`);
   }
 
-  const data = await response.json();
+  let data;
+  try {
+    data = await response.json();
+  } catch (e) {
+    const text = await response.text();
+    console.error("Failed to parse TikTok token response as JSON:", text);
+    throw new Error(`Invalid JSON response from TikTok API: ${text.substring(0, 200)}`);
+  }
   
   // Check for TikTok API error response
   if (data.error) {
-    console.error("TikTok API error response:", data);
-    throw new Error(`TikTok API error: ${data.error_description || data.error} (code: ${data.error_code || 'unknown'})`);
+    console.error("TikTok API error response:", JSON.stringify(data, null, 2));
+    
+    // Handle different error formats
+    let errorMessage = "Unknown error";
+    let errorCode = "unknown";
+    
+    if (typeof data.error === "string") {
+      errorMessage = data.error;
+    } else if (data.error?.message) {
+      errorMessage = data.error.message;
+    } else if (data.error_description) {
+      errorMessage = data.error_description;
+    } else {
+      errorMessage = JSON.stringify(data.error);
+    }
+    
+    if (data.error_code) {
+      errorCode = String(data.error_code);
+    } else if (data.error?.code) {
+      errorCode = String(data.error.code);
+    }
+    
+    throw new Error(`TikTok API error: ${errorMessage} (code: ${errorCode})`);
   }
 
   // Validate required fields
@@ -196,21 +229,55 @@ export async function fetchTikTokUserInfo(
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    let errorText = "";
+    try {
+      errorText = await response.text();
+    } catch (e) {
+      errorText = "Could not read error response";
+    }
     console.error("TikTok user info error:", {
       status: response.status,
       statusText: response.statusText,
       errorText,
+      url,
     });
     throw new Error(`Failed to fetch user info: ${response.status} ${response.statusText}. ${errorText}`);
   }
 
-  const data = await response.json();
+  let data;
+  try {
+    data = await response.json();
+  } catch (e) {
+    const text = await response.text();
+    console.error("Failed to parse TikTok user info response as JSON:", text);
+    throw new Error(`Invalid JSON response from TikTok API: ${text.substring(0, 200)}`);
+  }
   
   // Check for TikTok API error response
   if (data.error) {
-    console.error("TikTok API error response:", data);
-    throw new Error(`TikTok API error: ${data.error_description || data.error} (code: ${data.error_code || 'unknown'})`);
+    console.error("TikTok API error response:", JSON.stringify(data, null, 2));
+    
+    // Handle different error formats
+    let errorMessage = "Unknown error";
+    let errorCode = "unknown";
+    
+    if (typeof data.error === "string") {
+      errorMessage = data.error;
+    } else if (data.error?.message) {
+      errorMessage = data.error.message;
+    } else if (data.error_description) {
+      errorMessage = data.error_description;
+    } else {
+      errorMessage = JSON.stringify(data.error);
+    }
+    
+    if (data.error_code) {
+      errorCode = String(data.error_code);
+    } else if (data.error?.code) {
+      errorCode = String(data.error.code);
+    }
+    
+    throw new Error(`TikTok API error: ${errorMessage} (code: ${errorCode})`);
   }
 
   // TikTok API v2 returns data in a nested structure: { data: { user: {...} } }
