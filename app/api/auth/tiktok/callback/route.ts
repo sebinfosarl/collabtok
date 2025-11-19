@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
 
     // Exchange code for access token
     const tokenResponse = await exchangeCodeForToken(code, pkceVerifier);
-    const { access_token, open_id } = tokenResponse;
+    const { access_token, open_id, refresh_token, expires_in, scope, token_type } = tokenResponse;
 
     // Fetch user info from TikTok API
     const userInfo = await fetchTikTokUserInfo(access_token);
@@ -141,6 +141,33 @@ export async function GET(req: NextRequest) {
     if (statsError) {
       console.error("Error inserting TikTok stats:", statsError);
       return NextResponse.redirect(new URL("/?error=supabase_error", req.url));
+    }
+
+    // Store access token for automatic syncing
+    const expiresAt = expires_in
+      ? new Date(Date.now() + expires_in * 1000).toISOString()
+      : null;
+
+    const { error: tokenError } = await supabase
+      .from("tiktok_tokens")
+      .upsert(
+        {
+          user_id: userId,
+          access_token: access_token,
+          refresh_token: refresh_token || null,
+          expires_at: expiresAt,
+          token_type: token_type || "Bearer",
+          scope: scope || null,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "user_id",
+        }
+      );
+
+    if (tokenError) {
+      console.error("Error storing TikTok token:", tokenError);
+      // Don't fail the whole flow if token storage fails, but log it
     }
 
     // Create redirect response
