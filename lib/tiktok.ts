@@ -288,9 +288,18 @@ export async function fetchTikTokUserInfo(
   const userData = data.data?.user || data.data || data;
   
   if (!userData || !userData.open_id) {
-    console.error("TikTok user info response missing user data:", data);
+    console.error("TikTok user info response missing user data:", JSON.stringify(data, null, 2));
     throw new Error("TikTok user info response missing user data or open_id");
   }
+  
+  // Log the response to debug video_count issue
+  console.log("TikTok user info response:", {
+    open_id: userData.open_id,
+    username: userData.username,
+    video_count: userData.video_count,
+    follower_count: userData.follower_count,
+    all_fields: Object.keys(userData),
+  });
   
   return {
     open_id: userData.open_id,

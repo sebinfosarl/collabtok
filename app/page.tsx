@@ -2,6 +2,7 @@ import { getUserSessionOnServer } from "@/lib/session";
 import { createSupabaseClient } from "@/lib/supabaseClient";
 import Link from "next/link";
 import Image from "next/image";
+import { RefreshButton } from "@/components/RefreshButton";
 
 // Force dynamic rendering since we're using cookies and server-side data fetching
 export const dynamic = 'force-dynamic';
@@ -168,19 +169,23 @@ export default async function Home({
           </div>
           <div className="bg-white rounded-lg shadow-md p-6 text-center">
             <div className="text-3xl font-bold text-gray-900 mb-2">
-              {stats?.video_count?.toLocaleString() || 0}
+              {(stats?.video_count ?? profile?.video_count ?? 0).toLocaleString()}
             </div>
             <div className="text-gray-600 font-medium">Videos</div>
           </div>
         </div>
 
-        {/* Stats timestamp */}
-        {stats?.recorded_at && (
-          <div className="mt-4 text-center text-sm text-gray-500">
-            Last updated: {new Date(stats.recorded_at).toLocaleString()}
-          </div>
-        )}
+        {/* Refresh Button and Stats timestamp */}
+        <div className="mt-6 flex flex-col items-center gap-4">
+          <RefreshButton />
+          {stats?.recorded_at && (
+            <div className="text-center text-sm text-gray-500">
+              Last updated: {new Date(stats.recorded_at).toLocaleString()}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
+
