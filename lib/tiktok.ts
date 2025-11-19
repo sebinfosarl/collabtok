@@ -159,30 +159,32 @@ export async function exchangeCodeForToken(
   }
   
   // Check for TikTok API error response
+  // Note: TikTok returns { error: { code: "ok" } } for successful requests
   if (data.error) {
-    console.error("TikTok API error response:", JSON.stringify(data, null, 2));
+    const errorCode = data.error?.code || data.error_code;
     
-    // Handle different error formats
-    let errorMessage = "Unknown error";
-    let errorCode = "unknown";
-    
-    if (typeof data.error === "string") {
-      errorMessage = data.error;
-    } else if (data.error?.message) {
-      errorMessage = data.error.message;
-    } else if (data.error_description) {
-      errorMessage = data.error_description;
+    // If error code is "ok", it's actually a success response
+    if (errorCode === "ok") {
+      // This is a successful response, continue processing
+      console.log("TikTok API success response with error.code='ok'");
     } else {
-      errorMessage = JSON.stringify(data.error);
+      // This is a real error
+      console.error("TikTok API error response:", JSON.stringify(data, null, 2));
+      
+      let errorMessage = "Unknown error";
+      
+      if (typeof data.error === "string") {
+        errorMessage = data.error;
+      } else if (data.error?.message) {
+        errorMessage = data.error.message;
+      } else if (data.error_description) {
+        errorMessage = data.error_description;
+      } else {
+        errorMessage = JSON.stringify(data.error);
+      }
+      
+      throw new Error(`TikTok API error: ${errorMessage} (code: ${errorCode || 'unknown'})`);
     }
-    
-    if (data.error_code) {
-      errorCode = String(data.error_code);
-    } else if (data.error?.code) {
-      errorCode = String(data.error.code);
-    }
-    
-    throw new Error(`TikTok API error: ${errorMessage} (code: ${errorCode})`);
   }
 
   // Validate required fields
@@ -254,30 +256,32 @@ export async function fetchTikTokUserInfo(
   }
   
   // Check for TikTok API error response
+  // Note: TikTok returns { error: { code: "ok" } } for successful requests
   if (data.error) {
-    console.error("TikTok API error response:", JSON.stringify(data, null, 2));
+    const errorCode = data.error?.code || data.error_code;
     
-    // Handle different error formats
-    let errorMessage = "Unknown error";
-    let errorCode = "unknown";
-    
-    if (typeof data.error === "string") {
-      errorMessage = data.error;
-    } else if (data.error?.message) {
-      errorMessage = data.error.message;
-    } else if (data.error_description) {
-      errorMessage = data.error_description;
+    // If error code is "ok", it's actually a success response
+    if (errorCode === "ok") {
+      // This is a successful response, continue processing
+      console.log("TikTok API success response with error.code='ok'");
     } else {
-      errorMessage = JSON.stringify(data.error);
+      // This is a real error
+      console.error("TikTok API error response:", JSON.stringify(data, null, 2));
+      
+      let errorMessage = "Unknown error";
+      
+      if (typeof data.error === "string") {
+        errorMessage = data.error;
+      } else if (data.error?.message) {
+        errorMessage = data.error.message;
+      } else if (data.error_description) {
+        errorMessage = data.error_description;
+      } else {
+        errorMessage = JSON.stringify(data.error);
+      }
+      
+      throw new Error(`TikTok API error: ${errorMessage} (code: ${errorCode || 'unknown'})`);
     }
-    
-    if (data.error_code) {
-      errorCode = String(data.error_code);
-    } else if (data.error?.code) {
-      errorCode = String(data.error.code);
-    }
-    
-    throw new Error(`TikTok API error: ${errorMessage} (code: ${errorCode})`);
   }
 
   // TikTok API v2 returns data in a nested structure: { data: { user: {...} } }
