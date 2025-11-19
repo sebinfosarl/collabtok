@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/sync-tiktok",
-      "schedule": "0 * * * *"
+      "schedule": "* * * * *"
     }
   ]
 }
