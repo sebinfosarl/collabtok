@@ -4,6 +4,7 @@
 
 export const TIKTOK_AUTHORIZE_ENDPOINT = "https://www.tiktok.com/v2/auth/authorize/";
 export const TIKTOK_TOKEN_ENDPOINT = "https://open.tiktokapis.com/v2/oauth/token/";
+// TikTok API v2 user info endpoint
 export const TIKTOK_USER_INFO_ENDPOINT = "https://open.tiktokapis.com/v2/user/info/";
 
 /**
@@ -170,7 +171,7 @@ export async function exchangeCodeForToken(
 export async function fetchTikTokUserInfo(
   accessToken: string
 ): Promise<TikTokUserInfo> {
-  // TikTok API v2 uses POST with fields in request body, not query params
+  // TikTok API v2 uses GET with fields in query parameters
   const fields = [
     "open_id",
     "avatar_url",
@@ -183,17 +184,15 @@ export async function fetchTikTokUserInfo(
     "following_count",
     "likes_count",
     "video_count",
-  ];
+  ].join(",");
 
-  const response = await fetch(TIKTOK_USER_INFO_ENDPOINT, {
-    method: "POST",
+  const url = `${TIKTOK_USER_INFO_ENDPOINT}?fields=${encodeURIComponent(fields)}`;
+
+  const response = await fetch(url, {
+    method: "GET",
     headers: {
       "Authorization": `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      fields: fields,
-    }),
   });
 
   if (!response.ok) {
