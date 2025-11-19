@@ -50,7 +50,27 @@ export async function syncTikTokUserData(userId: string): Promise<{
     // Fetch latest user info from TikTok
     const userInfo = await fetchTikTokUserInfo(tokenData.access_token);
 
-    // Update profile
+    // Log what we received for debugging
+    console.log(`Syncing user ${userId}:`, {
+      username: userInfo.username,
+      video_count: userInfo.video_count,
+      follower_count: userInfo.follower_count,
+      following_count: userInfo.following_count,
+      likes_count: userInfo.likes_count,
+    });
+
+    // Update profile - use existing video_count if new one is 0 or undefined
+    // This prevents overwriting valid data with 0
+    const { data: existingProfile } = await supabase
+      .from("tiktok_profiles")
+      .select("video_count")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const videoCount = userInfo.video_count !== undefined && userInfo.video_count !== null
+      ? userInfo.video_count
+      : (existingProfile?.video_count ?? 0);
+
     const { error: profileError } = await supabase
       .from("tiktok_profiles")
       .upsert(
@@ -63,7 +83,7 @@ export async function syncTikTokUserData(userId: string): Promise<{
           verified: userInfo.is_verified || false,
           follower_count: userInfo.follower_count || 0,
           following_count: userInfo.following_count || 0,
-          video_count: userInfo.video_count || 0,
+          video_count: videoCount,
           updated_at: new Date().toISOString(),
         },
         {
@@ -86,7 +106,7 @@ export async function syncTikTokUserData(userId: string): Promise<{
         user_id: userId,
         follower_count: userInfo.follower_count || 0,
         following_count: userInfo.following_count || 0,
-        video_count: userInfo.video_count || 0,
+        video_count: videoCount,
         total_likes: userInfo.likes_count || 0,
         recorded_at: new Date().toISOString(),
       });
